@@ -19,13 +19,17 @@ class BasicControlsScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final telemetryData = ref.watch(telemetryProvider);
+    final batteryLevel = telemetryData.valueOrNull?.batteryLevel ?? 0;
     final batteryIcon = useMemoized(
-      () {
-        return const Icon(
-          Icons.battery_2_bar,
-          size: 40,
-          color: Colors.red,
-        );
+      () => switch (batteryLevel) {
+        > 0 && <= 10 => const Icon(Icons.battery_1_bar_rounded, size: 40, color: Colors.red),
+        > 10 && <= 20 => const Icon(Icons.battery_2_bar_rounded, size: 40, color: Colors.red),
+        > 20 && <= 30 => const Icon(Icons.battery_3_bar_rounded, size: 40, color: Colors.orange),
+        > 30 && <= 50 => const Icon(Icons.battery_4_bar_rounded, size: 40, color: Colors.yellow),
+        > 50 && <= 85 => const Icon(Icons.battery_5_bar_rounded, size: 40, color: Colors.green),
+        > 85 && < 100 => const Icon(Icons.battery_6_bar_rounded, size: 40, color: Colors.green),
+        == 100 => const Icon(Icons.battery_full_rounded, size: 40, color: Colors.green),
+        _ => const Icon(Icons.battery_0_bar_rounded, size: 40, color: Colors.red),
       },
       [telemetryData],
     );
@@ -34,13 +38,9 @@ class BasicControlsScreen extends HookConsumerWidget {
       () {
         final timer = Timer.periodic(
           const Duration(seconds: 5),
-          (_) {
-            ref.read(telemetryControllerProvider).sendEmptyRequest();
-          },
+          (_) => ref.read(telemetryControllerProvider).sendEmptyRequest(),
         );
-        return () {
-          timer.cancel();
-        };
+        return () => timer.cancel();
       },
       [],
     );
@@ -99,7 +99,7 @@ class BasicControlsScreen extends HookConsumerWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '23%',
+                              '${batteryLevel.round().toString()}%',
                               style: context.textBody,
                             ),
                           ],
